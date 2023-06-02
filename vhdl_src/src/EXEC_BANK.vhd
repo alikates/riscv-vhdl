@@ -41,13 +41,15 @@ port (
 	bad_jump_out	: out std_logic;
 	ecall_out		: out std_logic;
 	ebreak_out		: out std_logic;
-	bad_instr_out 	: out std_logic
+	bad_instr_out 	: out std_logic;
+	pc4_in	: in std_logic_vector(31 downto 0);
+	pc4_out	: out std_logic_vector(31 downto 0)
 	);
 end EXEC_BANK_RISC;
 
 architecture behavioral of EXEC_BANK_RISC is
 
-	signal pc, res, rs2, csr_result : std_logic_vector(31 downto 0);
+	signal pc, pc4, res, rs2, csr_result : std_logic_vector(31 downto 0);
 	signal csr_dest : std_logic_vector(11 downto 0);
 	signal rd : std_logic_vector(4 downto 0);
 	signal funct3 : std_logic_vector(2 downto 0);
@@ -98,6 +100,7 @@ begin
 				ecall <= ecall_in;
 				ebreak <= ebreak_in;
 				bad_instr <= bad_instr_in;
+				pc4 <= pc4_in;
 			end if;
 
 		end if;
@@ -119,5 +122,6 @@ begin
 	ecall_out <= ecall;
 	ebreak_out <= ebreak;
 	bad_instr_out <= bad_instr;
+	pc4_out <= pc4;
 
 end behavioral ; -- arch

@@ -30,7 +30,10 @@ architecture behavioral of RISC_SOC is
 		addr_data	: out std_logic_vector (31 downto 0);
 		bus_mode	: out std_logic_vector (2 downto 0);
 		bus_we		: out std_logic;
-		data_bus	: in std_logic_vector (31 downto 0)
+		bus_re		: out std_logic;
+		bus_pc		: out std_logic_vector (31 downto 0);
+		data_bus	: in std_logic_vector (31 downto 0);
+		ram_busy    : in std_logic
 	); 
 	end component;
 
@@ -47,9 +50,12 @@ architecture behavioral of RISC_SOC is
 		-- Mem Bus interface
 		data_in 	: in std_logic_vector (31 downto 0);
 		addr_data	: in std_logic_vector (31 downto 0);
+		pc			: in std_logic_vector (31 downto 0);
 		we 			: in std_logic;
+		re 			: in std_logic;
 		mode		: in std_logic_vector (2 downto 0);
-		data_out 	: out std_logic_vector (31 downto 0)
+		data_out 	: out std_logic_vector (31 downto 0);
+		ram_busy    : out std_logic
 	);
 	end component;
 
@@ -114,7 +120,8 @@ architecture behavioral of RISC_SOC is
 	signal read_bus : std_logic_vector(31 downto 0);
 	signal addr_bus : std_logic_vector(31 downto 0);
 	signal mode_bus : std_logic_vector(2 downto 0);
-	signal we_bus : std_logic;
+	signal pc_data_bus : std_logic_vector(31 downto 0);
+	signal we_bus, re_bus, ram_busy : std_logic;
 	
 	-- Dump signal
 	signal dump_signal : std_logic_vector(31 downto 0);
@@ -137,7 +144,10 @@ begin
 		addr_data => addr_bus,
 		bus_mode => mode_bus,
 		bus_we => we_bus,
-		data_bus => read_bus
+		bus_re => re_bus,
+		bus_pc => pc_data_bus,
+		data_bus => read_bus,
+		ram_busy => ram_busy
 	);
 
 	mem : RAM_RISC PORT MAP (
@@ -147,10 +157,14 @@ begin
 		fetch => fetch_bus,
 		addr_inst => pc_bus,
 		inst_out => instr_bus,
+		pc => pc_data_bus,
+
+		ram_busy => ram_busy,
 
 		data_in => write_bus,
 		addr_data => addr_bus,
 		we => we_bus,
+		re => re_bus,
 		mode => mode_bus,
 		data_out => read_bus
 	);

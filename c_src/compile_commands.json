@@ -1,0 +1,128 @@
+[
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/start.o",
+      "src/start.S"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/start.S",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/start.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/print.o",
+      "src/print.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/print.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/print.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/csr.o",
+      "src/csr.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/csr.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/csr.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/trap_handler.o",
+      "src/trap_handler.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/trap_handler.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/trap_handler.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/acdc.o",
+      "src/acdc.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/acdc.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/acdc.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/mtimer.o",
+      "src/mtimer.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/mtimer.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/mtimer.o"
+  },
+  {
+    "arguments": [
+      "/opt/xpack/riscv-none-elf-gcc/bin/riscv-none-elf-gcc",
+      "-Wall",
+      "-I",
+      "include",
+      "--target=riscv32",
+      "-march=rv32im_zicsr",
+      "-mabi=ilp32",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.c"
+    ],
+    "directory": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src",
+    "file": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/src/main.c",
+    "output": "/fedora/home/alex/Universidad/Cuarto/Segundo_Cuatri/LabEmpotrados/proyecto/riscv-vhdl/c_src/build/main.o"
+  }
+]

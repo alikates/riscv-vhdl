@@ -22,7 +22,10 @@ port (
 	addr_data	: out std_logic_vector (31 downto 0);
 	bus_mode	: out std_logic_vector (2 downto 0);
 	bus_we		: out std_logic;
-	data_bus	: in std_logic_vector (31 downto 0)
+	bus_re		: out std_logic;
+	bus_pc 		: out std_logic_vector (31 downto 0);
+	data_bus	: in std_logic_vector (31 downto 0);
+	ram_busy    : in std_logic
 ); 
 end RISC;
 
@@ -185,7 +188,9 @@ architecture behavioral of RISC is
 		bad_jump_out	: out std_logic;
 		ecall_out		: out std_logic;
 		ebreak_out		: out std_logic;
-		bad_instr_out	: out std_logic
+		bad_instr_out	: out std_logic;
+		pc4_in	: in std_logic_vector(31 downto 0);
+		pc4_out	: out std_logic_vector(31 downto 0)
 	);
 	end component;
 
@@ -203,7 +208,9 @@ architecture behavioral of RISC is
 		res_out		: out std_logic_vector(31 downto 0);
 		rd_out      : out std_logic_vector(4 downto 0);
 		rd_mux_out	: out std_logic;
-		rd_we_out   : out std_logic);
+		rd_we_out   : out std_logic;
+		data_bus_in : in std_logic_vector(31 downto 0);
+		data_bus_out : out std_logic_vector(31 downto 0));
 	end component;
 
 	component MMODE_RISC is
@@ -249,7 +256,7 @@ architecture behavioral of RISC is
 
 	-- Memory signals declarations
 	signal data_out, data_in, addr_inst : std_logic_vector(31 downto 0);
-	signal mem_we : std_logic;
+	signal mem_we, mem_re : std_logic;
 
 	-- Fetch stage signals declarations
 	signal pc_we, fetch_bank_we, fetch_nop : std_logic;
@@ -271,7 +278,7 @@ architecture behavioral of RISC is
 	signal csr_stop, ecall_dec, ebreak_dec : std_logic;
 
 	-- Execution stage signal declarations
-	signal pc_exe, pc4_exe, imm_exe, rs1_bank, rs2_bank, rs1_exe, rs2_exe, op1_exe, op2_exe, alu_res, result, pc_exe_out, csr_val_exe, csr_result, muldiv_res : std_logic_vector(31 downto 0);
+	signal pc_exe, pc4_exe, pc4_exe_out, imm_exe, rs1_bank, rs2_bank, rs1_exe, rs2_exe, op1_exe, op2_exe, alu_res, result, pc_exe_out, csr_val_exe, csr_result, muldiv_res : std_logic_vector(31 downto 0);
 	signal csr_dest_exe : std_logic_vector(11 downto 0);
 	signal rd_exe : std_logic_vector(4 downto 0);
 	signal alu_exe : std_logic_vector(3 downto 0);
@@ -290,12 +297,14 @@ architecture behavioral of RISC is
 	signal ecall_mem, ebreak_mem, ma_half, ma_word, bad_instr_mem : std_logic;
 
 	-- Writeback stage signal declarations
+	signal pc_wb : std_logic_vector(31 downto 0);
 	signal rd_wb : std_logic_vector(4 downto 0);
 	signal we_wb, mem_bank_we, rd_mux : std_logic;
 	signal data_wb, res_wb : std_logic_vector(31 downto 0);
 
-begin
+	signal data_bus_mem : std_logic_vector(31 downto 0);
 
+begin
 	-- CSRs
 	mmode : MMODE_RISC
 	PORT MAP (
@@ -426,14 +435,14 @@ begin
 	);
 
 	-- Pc advance control
-	pc_we <= not (load_use or csr_stop) or take_trap or mret_mem;	-- irqs and mret must always write pc 
+	pc_we <= not (load_use or csr_stop or ram_busy) or take_trap or mret_mem;	-- irqs and mret must always write pc
 	pc_in <= 	mtvec_out & "00" when take_trap = '1'
 	else		mepc_out when mret_mem = '1'
 	else		alu_res(31 downto 1)&"0" when branch = '1'
 	else		pc4;
 	
 	-- Fetch bank control
-	fetch_bank_we <= not (load_use or csr_stop);
+	fetch_bank_we <= not (load_use or csr_stop or ram_busy);
 	fetch_nop <= take_trap or branch or mret_mem;	-- clear whats in bank
 
 	-- Fetch bus control
@@ -667,7 +676,7 @@ begin
 	else			pc_dec;
 
 	-- Constant decode stage signals
-	decode_bank_we <= '1';
+	decode_bank_we <= not ram_busy;
 
 	-- Bank DECODE-EXEC
 	decode_bank : DECODE_BANK_RISC
@@ -820,7 +829,7 @@ begin
 	nop_exe <= take_trap or mret_mem;
 
 	-- Execution stage constants
-	exec_bank_we <= '1';
+	exec_bank_we <= not ram_busy;
 
 	-- Bank EXEC-MEM
 	exec_bank : EXEC_BANK_RISC
@@ -860,7 +869,10 @@ begin
 		bad_jump_out => bad_jump_mem,
 		ecall_out => ecall_mem,
 		ebreak_out => ebreak_mem,
-		bad_instr_out => bad_instr_mem
+		bad_instr_out => bad_instr_mem,
+
+		pc4_in => pc4_exe,
+		pc4_out => pc4_exe_out
 	);
 
 	-- Memory stage
@@ -893,10 +905,11 @@ begin
 
 	-- Write enables
 	mem_we <= '1' when mem_use = "11" and take_trap = '0' else '0';
+	mem_re <= '1' when mem_use = "10" and take_trap = '0' else '0';
 	rd_we_mem_out <= rd_we_mem when take_trap = '0' else '0';
 
 	-- Memory constant values
-	mem_bank_we <= '1';
+	mem_bank_we <= not ram_busy;
 
 	-- CSR sw writing
 	csr_sw <= zicsr_mem and not(take_trap);
@@ -913,6 +926,9 @@ begin
 	addr_data <= res_mem;
 	bus_mode <= funct3_mem;
 	bus_we <= mem_we;
+	bus_re <= mem_re;
+
+	bus_pc <= pc4_exe_out;
 
 	-- Benk MEM-WB
 	mem_bank : MEM_BANK_RISC
@@ -920,6 +936,9 @@ begin
 		clk => clk,
 		reset => reset,
 		we => mem_bank_we,
+
+		data_bus_in => data_bus,
+		data_bus_out => data_bus_mem,
 
 		res_in => res_mem,
 		rd_in => rd_mem,
@@ -933,6 +952,6 @@ begin
 	);
 
 	data_wb <= 	res_wb when rd_mux = '0'
-	else		data_bus;
+	else		data_bus_mem;
 
 end behavioral ; -- arch

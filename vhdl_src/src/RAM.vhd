@@ -17,81 +17,278 @@ entity RAM_RISC is
 		reset		: in std_logic;
 		clk 		: in std_logic;
 		we 			: in std_logic;
+		re 			: in std_logic;
 		fetch		: in std_logic;
 		mode		: in std_logic_vector (2 downto 0);
 		addr_inst 	: in std_logic_vector (29 downto 0);
 		addr_data	: in std_logic_vector (31 downto 0);
+		pc	: in std_logic_vector (31 downto 0);
 
 		data_in 	: in std_logic_vector (31 downto 0);
 
 		inst_out 	: out std_logic_vector (31 downto 0);
-		data_out 	: out std_logic_vector (31 downto 0)); 
+		data_out 	: out std_logic_vector (31 downto 0);
+
+		ram_busy    : out std_logic
+		);
 end RAM_RISC;
 
 architecture behavioral of RAM_RISC is
 
-	component B_RAM_0 is 
+	component mem_acdc is
+	generic (
+		num_vias     : integer := 4;
+		xlen         : integer := 32;
+		block_word_n : integer := 4
+	);
 	port (
-		clk 		: in std_logic;
-		we 			: in std_logic;
-		fetch      	: in std_logic;
-		addr_inst 	: in std_logic_vector (29 downto 0);
-		addr_data	: in std_logic_vector (29 downto 0);
-		data_in 	: in std_logic_vector (7 downto 0);
+		clk   : in    std_logic;
+		reset : in    std_logic;
+		addr  : in    std_logic_vector(xlen - 1 downto 0);
+		pc    : in    std_logic_vector(xlen - 1 downto 0);
+		din   : in    std_logic_vector(xlen - 1 downto 0);
+		we    : in    std_logic; -- write enable
+		re    : in    std_logic; -- read enable
+		inv   : in    std_logic; -- invalidate
+		access_mode : in    std_logic_vector(1 downto 0); -- "00" word, "01" half-word, "10" byte
+		dout  : out   std_logic_vector(xlen - 1 downto 0);
+		rdy   : out   std_logic
+	);
+	end component mem_acdc;
 
-		inst_out 	: out std_logic_vector (7 downto 0);
-		data_out 	: out std_logic_vector (7 downto 0)); 
-	end component;
-
-	component B_RAM_1 is 
+	component imem is
 	port (
-		clk 		: in std_logic;
-		we 			: in std_logic;
-		fetch      	: in std_logic;
 		addr_inst 	: in std_logic_vector (29 downto 0);
-		addr_data	: in std_logic_vector (29 downto 0);
-		data_in 	: in std_logic_vector (7 downto 0);
+		instr_out 	: out std_logic_vector (31 downto 0)
+	);
+	end component imem;
 
-		inst_out 	: out std_logic_vector (7 downto 0);
-		data_out 	: out std_logic_vector (7 downto 0)); 
-	end component;
-
-	component B_RAM_2 is 
-	port (
-		clk 		: in std_logic;
-		we 			: in std_logic;
-		fetch      	: in std_logic;
-		addr_inst 	: in std_logic_vector (29 downto 0);
-		addr_data	: in std_logic_vector (29 downto 0);
-		data_in 	: in std_logic_vector (7 downto 0);
-
-		inst_out 	: out std_logic_vector (7 downto 0);
-		data_out 	: out std_logic_vector (7 downto 0)); 
-	end component;
-
-	component B_RAM_3 is 
-	port (
-		clk 		: in std_logic;
-		we 			: in std_logic;
-		fetch 		: in std_logic;
-		addr_inst 	: in std_logic_vector (29 downto 0);
-		addr_data	: in std_logic_vector (29 downto 0);
-		data_in 	: in std_logic_vector (7 downto 0);
-
-		inst_out 	: out std_logic_vector (7 downto 0);
-		data_out 	: out std_logic_vector (7 downto 0)); 
-	end component;
-
-	signal we_0, we_1, we_2, we_3, bg_in : std_logic; 
-	signal data_in_0, data_in_1, data_in_2, data_in_3 : std_logic_vector(7 downto 0);
-	signal data_out_0, data_out_1, data_out_2, data_out_3 : std_logic_vector(7 downto 0);
-	signal unsg_byte, sign_byte, unsg_half, sign_half, word : std_logic_vector(31 downto 0);
 
 	signal saved_byte : std_logic_vector(1 downto 0);
 	signal saved_mode : std_logic_vector(2 downto 0);
-	signal bg : std_logic;
+	signal bg, bg_in : std_logic;
+	signal invalidate : std_logic;
+
+	signal dout : std_logic_vector(31 downto 0);
+	signal rdy, ram_busy_int, addr_range : std_logic;
+	signal int_we, int_re, rdy_int : std_logic;
+
+	-- signal imem_dout, imem_addr : std_logic_vector(31 downto 0);
+
+	type rom_type is array (0 to 8192) of std_logic_vector(31 downto 0);
+	signal rom : rom_type := (
+		x"00000097",
+		x"01c08093",
+		x"30509073",
+		x"00001117",
+		x"b2410113",
+		x"170000ef",
+		x"0000006f",
+		x"ffc10113",
+		x"00112023",
+		x"018000ef",
+		x"2b8000ef",
+		x"08c000ef",
+		x"00012083",
+		x"00410113",
+		x"30200073",
+		x"f8c10113",
+		x"00312023",
+		x"00412223",
+		x"00512423",
+		x"00612623",
+		x"00712823",
+		x"00812a23",
+		x"00912c23",
+		x"00a12e23",
+		x"02b12023",
+		x"02c12223",
+		x"02d12423",
+		x"02e12623",
+		x"02f12823",
+		x"03012a23",
+		x"03112c23",
+		x"03212e23",
+		x"05312023",
+		x"05412223",
+		x"05512423",
+		x"05612623",
+		x"05712823",
+		x"05812a23",
+		x"05912c23",
+		x"05a12e23",
+		x"07b12023",
+		x"07c12223",
+		x"07d12423",
+		x"07e12623",
+		x"07f12823",
+		x"00008067",
+		x"00012183",
+		x"00412203",
+		x"00812283",
+		x"00c12303",
+		x"01012383",
+		x"01412403",
+		x"01812483",
+		x"01c12503",
+		x"02012583",
+		x"02412603",
+		x"02812683",
+		x"02c12703",
+		x"03012783",
+		x"03412803",
+		x"03812883",
+		x"03c12903",
+		x"04012983",
+		x"04412a03",
+		x"04812a83",
+		x"04c12b03",
+		x"05012b83",
+		x"05412c03",
+		x"05812c83",
+		x"05c12d03",
+		x"06012d83",
+		x"06412e03",
+		x"06812e83",
+		x"06c12f03",
+		x"07012f83",
+		x"07410113",
+		x"00008067",
+		x"00300793",
+		x"00a7ec63",
+		x"00251513",
+		x"000017b7",
+		x"3203a783",
+		x"00a787b3",
+		x"00b7a023",
+		x"00008067",
+		x"34202573",
+		x"00008067",
+		x"30452073",
+		x"00008067",
+		x"30453073",
+		x"00008067",
+		x"30052073",
+		x"00008067",
+		x"30053073",
+		x"00008067",
+		x"30002573",
+		x"00008067",
+		x"ff010113",
+		x"00112623",
+		x"25800593",
+		x"00100513",
+		x"fa1ff0ef",
+		x"33400513",
+		x"0bc000ef",
+		x"7d000513",
+		x"00000593",
+		x"058000ef",
+		x"088000ef",
+		x"0000006f",
+		x"ff010113",
+		x"00112623",
+		x"00050737",
+		x"000015b7",
+		x"00072783",
+		x"00472603",
+		x"8085a683",
+		x"80c5a583",
+		x"00d786b3",
+		x"00f6b7b3",
+		x"00b60633",
+		x"00c787b3",
+		x"00d72423",
+		x"00f72623",
+		x"34400513",
+		x"068000ef",
+		x"00c12083",
+		x"01010113",
+		x"00008067",
+		x"000017b7",
+		x"80a7a423",
+		x"80b7a623",
+		x"00050737",
+		x"00072783",
+		x"00472683",
+		x"00a78533",
+		x"00f537b3",
+		x"00b686b3",
+		x"00d787b3",
+		x"00a72423",
+		x"00f72623",
+		x"00008067",
+		x"ff010113",
+		x"00112623",
+		x"08000513",
+		x"f1dff0ef",
+		x"00800513",
+		x"f25ff0ef",
+		x"00c12083",
+		x"01010113",
+		x"00008067",
+		x"00054783",
+		x"00078e63",
+		x"00150513",
+		x"00090737",
+		x"00f72023",
+		x"00150513",
+		x"fff54783",
+		x"fe079ae3",
+		x"00008067",
+		x"06050063",
+		x"fe010113",
+		x"00010813",
+		x"00080693",
+		x"00000713",
+		x"02b577b3",
+		x"00050613",
+		x"02b55533",
+		x"03078793",
+		x"00f68023",
+		x"00070793",
+		x"00170713",
+		x"00168693",
+		x"feb670e3",
+		x"0207c063",
+		x"00f107b3",
+		x"000906b7",
+		x"0007c703",
+		x"00e6a023",
+		x"00078713",
+		x"fff78793",
+		x"ff0718e3",
+		x"02010113",
+		x"00008067",
+		x"00008067",
+		x"ff010113",
+		x"00112623",
+		x"00812423",
+		x"e69ff0ef",
+		x"800007b7",
+		x"00778793",
+		x"02f50463",
+		x"00050413",
+		x"34c00513",
+		x"f55ff0ef",
+		x"01000593",
+		x"00040513",
+		x"f6dff0ef",
+		x"34000513",
+		x"f41ff0ef",
+		x"0000006f",
+		x"e95ff0ef",
+		x"00c12083",
+		x"00812403",
+		x"01010113",
+		x"00008067",
+		others => (others => '0')
+	);
 
 begin
+	invalidate <= '0';
+
+	addr_range <= '1' when (addr_data(31 downto 14) = "000000000000000000") or (addr_data(31 downto 4) = "1000000000000000000000000000") else '0';
 
 	process(clk)
 	begin
@@ -100,120 +297,47 @@ begin
 				saved_byte <= "00";
 				saved_mode <= "000";
 				bg <= '0';
+				rdy_int <= '0';
 			else
 				saved_byte <= addr_data(1 downto 0);
+				-- assert mode = "100" report "unimplemented memory access mode";
 				saved_mode <= mode;
 				bg <= bg_in;
+				rdy_int <= rdy;
 			end if;
 		end if;
 	end process;
 
-	bg_in <= '1' when unsigned(addr_data) < x"00008000" else '0';
+	bg_in <= '1' when unsigned(addr_data) < x"00002000" else '0';
 
-	we_0 <= '1' when we = '1' and (	(mode(1 downto 0) = "00" and addr_data(1 downto 0) = "00") or
-									(mode(1 downto 0) = "01" and addr_data(1 downto 0) = "00") or
-									(mode(1 downto 0) = "10") ) and bg_in = '1'
-	else '0';
+	inst_out <= rom(to_integer(unsigned(addr_inst(12 downto 0))));
 
-	data_in_0 <= data_in(7 downto 0);
+	int_we <= we when addr_range = '1' else '0';
+	int_re <= re when addr_range = '1' else '0';
 
-	bank_0 : B_RAM_0
+	D_MEM : mem_acdc
+	GENERIC MAP (
+	    num_vias => 4,
+		xlen => 32,
+		block_word_n => 4
+	)
 	PORT MAP (
-		clk => clk,
-		we => we_0,
-		fetch => fetch,
-		addr_inst => addr_inst,
-		addr_data => addr_data(31 downto 2),
-		data_in => data_in_0,
-		inst_out => inst_out(7 downto 0),
-		data_out => data_out_0 
+		clk   => clk,
+		reset => reset,
+		addr  => addr_data,
+		pc    => pc,
+		we    => int_we,
+		re    => int_re,
+		din   => data_in,
+		access_mode => mode(1 downto 0),
+		dout  => dout,
+		inv   => invalidate,
+		rdy   => rdy
 	);
 
-	we_1 <= '1' when we = '1' and (	(mode(1 downto 0) = "00" and addr_data(1 downto 0) = "01") or
-									(mode(1 downto 0) = "01" and addr_data(1 downto 0) = "00") or
-									(mode(1 downto 0) = "10")) and bg_in = '1'
-	else '0';
-
-	data_in_1 <= 	data_in(7 downto 0) when mode(1 downto 0) = "00" 
-	else 			data_in(15 downto 8);
-
-	bank_1 : B_RAM_1
-	PORT MAP (
-		clk => clk,
-		we => we_1,
-		fetch => fetch,
-		addr_inst => addr_inst,
-		addr_data => addr_data(31 downto 2),
-		data_in => data_in_1,
-		inst_out => inst_out(15 downto 8),
-		data_out => data_out_1
-	);
-
-	we_2 <= '1' when we = '1' and (	(mode(1 downto 0) = "00" and addr_data(1 downto 0) = "10") or
-									(mode(1 downto 0) = "01" and addr_data(1 downto 0) = "10") or
-									(mode(1 downto 0) = "10")) and bg_in = '1'
-	else '0';
-
-	data_in_2 <= 	data_in(7 downto 0) when mode(1 downto 0) = "01" or mode(1 downto 0) = "00"
-	else			data_in(23 downto 16);
-
-	bank_2 : B_RAM_2
-	PORT MAP (
-		clk => clk,
-		we => we_2,
-		fetch => fetch,
-		addr_inst => addr_inst,
-		addr_data => addr_data(31 downto 2),
-		data_in => data_in_2,
-		inst_out => inst_out(23 downto 16),
-		data_out => data_out_2
-	);
-
-	we_3 <= '1' when we = '1' and (	(mode(1 downto 0) = "00" and addr_data(1 downto 0) = "11") or
-									(mode(1 downto 0) = "01" and addr_data(1 downto 0) = "10") or
-									(mode(1 downto 0) = "10")) and bg_in = '1'
-	else '0';
-
-	data_in_3 <= 	data_in(7 downto 0) when mode(1 downto 0) = "00"
-	else 			data_in(15 downto 8) when mode(1 downto 0) = "01"
-	else			data_in(31 downto 24);
-
-	bank_3 : B_RAM_3
-	PORT MAP (
-		clk => clk,
-		we => we_3,
-		fetch => fetch,
-		addr_inst => addr_inst,
-		addr_data => addr_data(31 downto 2),
-		data_in => data_in_3,
-		inst_out => inst_out(31 downto 24),
-		data_out => data_out_3
-	);
-
-	-- Generate output signed/unsigned byte/half/word
-	-- With values of data registers of mem banks
-	unsg_byte(7 downto 0) <= 	data_out_0 when saved_byte(1 downto 0) = "00"
-	else						data_out_1 when saved_byte(1 downto 0) = "01"
-	else						data_out_2 when saved_byte(1 downto 0) = "10"
-	else						data_out_3;
-	unsg_byte(31 downto 8) <= (others => '0');
-	sign_byte(7 downto 0) <= unsg_byte(7 downto 0);
-	sign_byte(31 downto 8) <= (others => unsg_byte(7));
-
-	unsg_half(15 downto 0) <= 	data_out_1 & data_out_0 when saved_byte(1) = '0'
-	else						data_out_3 & data_out_2;
-	unsg_half(31 downto 16) <= (others => '0');
-	sign_half(15 downto 0) <= unsg_half(15 downto 0);
-	sign_half(31 downto 16) <= (others => unsg_half(15));
-
-	word <= data_out_3 & data_out_2 & data_out_1 & data_out_0;
-
+	ram_busy <= not rdy when addr_range = '1' else '0';
 	data_out <= (others => 'Z') when bg = '0'
-	else 		sign_byte when saved_mode = "000"
-	else		unsg_byte when saved_mode = "100"
-	else		sign_half when saved_mode = "001"
-	else		unsg_half when saved_mode = "101"
-	else		word;
+				else dout;
 
 end behavioral ; -- arch
 

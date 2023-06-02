@@ -5,14 +5,14 @@ mkdir build
 mkdir build/work
 
 cd src
-err=$(ghdl -a --workdir=../build/work *.vhd 2>&1)
+err=$(ghdl -a --workdir=../build/work --ieee=synopsys -fexplicit --std=08 *.vhd 2>&1)
 if [[ $? != 0 ]]
 then
     echo "$err"
     exit 1
 fi
 
-err=$(ghdl -e --workdir=../build/work --ieee=synopsys -fexplicit "test" 2>&1)
+err=$(ghdl -e --workdir=../build/work --ieee=synopsys -fexplicit --std=08 "test" 2>&1)
 if [[ $? != 0 ]]
 then
     echo "$err"

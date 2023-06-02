@@ -1,5 +1,5 @@
 # Compiler definitions
-CROSS := riscv32-unknown-elf-
+CROSS := riscv-none-elf-
 CC := $(CROSS)gcc
 LD := $(CROSS)ld
 DUMP := $(CROSS)objdump
@@ -16,7 +16,7 @@ SSRCS := $(wildcard $(SRC_DIR)/*.S)
 SOBJS := $(SSRCS:$(SRC_DIR)%.S=$(BUILD_DIR)%.o)
 
 # Compiler flags
-CFLAGS := -Wall -I include -march=rv32im -mabi=ilp32
+CFLAGS := -Wall -I include -march=rv32im_zicsr -mabi=ilp32 -O1
 # Linker flags
 LDFLAGS := -nostartfiles -T linker.lds
 

@@ -3,15 +3,20 @@ ENTRY( _start )
 
 MEMORY
 {
-	ram (wxa) : ORIGIN = 0x00000000, LENGTH = 32K
+	rom (xa) :  ORIGIN = 0x00000000, LENGTH = 4K
+	ram (wxa) : ORIGIN = 0x00000800, LENGTH = 4K
 }
 
 SECTIONS
 {
-	.init : { *(.init) } >ram
-	.text : { *(.text) } >ram
-	.data : { *(.data) } >ram
-	.sdata : { *(.sdata) } >ram
+	.init : { *(.init) } >rom
+	.text : {
+		*(.text);
+		. = ALIGN(4);
+	} >rom
+	.data : { *(.data); . = ALIGN(4); } >rom
+	.rodata : { *(.rodata.*); . = ALIGN(4); } >rom
+	.sdata : { *(.sdata); . = ALIGN(4); } >rom
 	.bss : { *(.bss) } >ram
 	.sbss : { *(.sbss) } >ram
 	.stack :
