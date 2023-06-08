@@ -210,7 +210,8 @@ architecture behavioral of RISC is
 		rd_mux_out	: out std_logic;
 		rd_we_out   : out std_logic;
 		data_bus_in : in std_logic_vector(31 downto 0);
-		data_bus_out : out std_logic_vector(31 downto 0));
+		data_bus_out : out std_logic_vector(31 downto 0)
+	);
 	end component;
 
 	component MMODE_RISC is
@@ -303,6 +304,8 @@ architecture behavioral of RISC is
 	signal data_wb, res_wb : std_logic_vector(31 downto 0);
 
 	signal data_bus_mem : std_logic_vector(31 downto 0);
+
+	signal ram_busy_out : std_logic;
 
 begin
 	-- CSRs
@@ -952,6 +955,6 @@ begin
 	);
 
 	data_wb <= 	res_wb when rd_mux = '0'
-	else		data_bus_mem;
+	else		data_bus;
 
 end behavioral ; -- arch

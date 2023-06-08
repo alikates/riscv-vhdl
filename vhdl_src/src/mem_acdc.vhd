@@ -215,6 +215,7 @@ begin
     case state is
 
       when Inicio =>
+        rdy <= '1';
         next_state <= Espera;
 
       when Espera =>
@@ -268,7 +269,7 @@ begin
           next_state <= Espera;
         end if;
       when RamWriteAroundWait =>
-        rdy <= '1';
+        -- rdy <= '1';
         internal_dout <= mem_dout;
         next_state <= Espera;
 
@@ -278,7 +279,7 @@ begin
         mem_din       <= din;
         mem_bus_rd_wr <= '0';
         if (mem_bus_trdy = '1') then
-          rdy <= '1';
+          -- rdy <= '1';
           internal_dout <= mem_dout;
           next_state <= Espera;
         end if;
@@ -312,7 +313,6 @@ begin
         mem_din       <= acdc_dout;
 
         if (word_cnt(2) = '1') then
-          -- rdy <= '1';
           mem_bus_frame <= '0';
           next_state    <= ReplaceWaitRamOk;
         else
@@ -356,7 +356,7 @@ begin
   dout (31 downto 16) <= internal_dout(31 downto 16) when access_mode(1 downto 0) = "10" else
                          (others => '0');
   dout (15 downto 8) <= internal_dout(15 downto 8) when (access_mode(1 downto 0) = "01" and byte_n = "00") or access_mode(1 downto 0) = "10" else
-                        internal_dout(31 downto 16) when access_mode(1 downto 0) = "01" and byte_n = "10" else
+                        internal_dout(23 downto 16) when access_mode(1 downto 0) = "01" and byte_n = "10" else
                         (others => '0') when access_mode = "00";
   dout (7 downto 0) <= internal_dout(7 downto 0) when (access_mode(1 downto 0) = "00" and byte_n = "00") or access_mode(1 downto 0) = "10" or access_mode(1 downto 0) = "01"  else
                        internal_dout(15 downto 8) when access_mode(1 downto 0) = "00" and byte_n = "01" else

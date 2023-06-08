@@ -70,8 +70,8 @@ architecture behavioral of RAM_RISC is
 	signal invalidate : std_logic;
 
 	signal dout : std_logic_vector(31 downto 0);
-	signal rdy, ram_busy_int, addr_range : std_logic;
-	signal int_we, int_re, rdy_int : std_logic;
+	signal rdy, addr_range : std_logic;
+	signal int_we, int_re : std_logic;
 
 	-- signal imem_dout, imem_addr : std_logic_vector(31 downto 0);
 
@@ -82,12 +82,12 @@ architecture behavioral of RAM_RISC is
 		x"30509073",
 		x"00001117",
 		x"b2410113",
-		x"170000ef",
+		x"16c000ef",
 		x"0000006f",
 		x"ffc10113",
 		x"00112023",
 		x"018000ef",
-		x"2b8000ef",
+		x"2b4000ef",
 		x"08c000ef",
 		x"00012083",
 		x"00410113",
@@ -155,10 +155,9 @@ architecture behavioral of RAM_RISC is
 		x"07410113",
 		x"00008067",
 		x"00300793",
-		x"00a7ec63",
+		x"00a7ea63",
 		x"00251513",
-		x"000017b7",
-		x"3203a783",
+		x"36402783",
 		x"00a787b3",
 		x"00b7a023",
 		x"00008067",
@@ -178,8 +177,8 @@ architecture behavioral of RAM_RISC is
 		x"00112623",
 		x"25800593",
 		x"00100513",
-		x"fa1ff0ef",
-		x"33400513",
+		x"fa5ff0ef",
+		x"33000513",
 		x"0bc000ef",
 		x"7d000513",
 		x"00000593",
@@ -192,22 +191,22 @@ architecture behavioral of RAM_RISC is
 		x"000015b7",
 		x"00072783",
 		x"00472603",
-		x"8085a683",
-		x"80c5a583",
+		x"8005a683",
+		x"8045a583",
 		x"00d786b3",
 		x"00f6b7b3",
 		x"00b60633",
 		x"00c787b3",
 		x"00d72423",
 		x"00f72623",
-		x"34400513",
+		x"34000513",
 		x"068000ef",
 		x"00c12083",
 		x"01010113",
 		x"00008067",
 		x"000017b7",
-		x"80a7a423",
-		x"80b7a623",
+		x"80a7a023",
+		x"80b7a223",
 		x"00050737",
 		x"00072783",
 		x"00472683",
@@ -269,12 +268,12 @@ architecture behavioral of RAM_RISC is
 		x"00778793",
 		x"02f50463",
 		x"00050413",
-		x"34c00513",
+		x"34800513",
 		x"f55ff0ef",
 		x"01000593",
 		x"00040513",
 		x"f6dff0ef",
-		x"34000513",
+		x"33c00513",
 		x"f41ff0ef",
 		x"0000006f",
 		x"e95ff0ef",
@@ -297,13 +296,11 @@ begin
 				saved_byte <= "00";
 				saved_mode <= "000";
 				bg <= '0';
-				rdy_int <= '0';
 			else
 				saved_byte <= addr_data(1 downto 0);
 				-- assert mode = "100" report "unimplemented memory access mode";
 				saved_mode <= mode;
 				bg <= bg_in;
-				rdy_int <= rdy;
 			end if;
 		end if;
 	end process;
